@@ -1,9 +1,13 @@
 package top.zibin.luban.example;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -33,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView thumbFileSize;
     private TextView thumbImageSize;
     private ImageView image;
+    private static final int READ_EXTERNAL_STORAGE_REQUEST_CODE=1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,16 +56,46 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                PhotoPicker.builder()
-                        .setPhotoCount(5)
-                        .setShowCamera(true)
-                        .setShowGif(true)
-                        .setPreviewEnabled(false)
-                        .start(MainActivity.this, PhotoPicker.REQUEST_CODE);
-
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    //申请WRITE_EXTERNAL_STORAGE权限
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                            READ_EXTERNAL_STORAGE_REQUEST_CODE);
+                }else {
+                    selectImage();
+                }
             }
         });
     }
+
+    private void selectImage() {
+        PhotoPicker.builder()
+                .setPhotoCount(5)
+                .setShowCamera(true)
+                .setShowGif(true)
+                .setPreviewEnabled(false)
+                .start(MainActivity.this, PhotoPicker.REQUEST_CODE);
+    }
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        doNext(requestCode,grantResults);
+    }
+
+    //我们接着需要根据requestCode和grantResults(授权结果)做相应的后续处理
+    private void doNext(int requestCode, int[] grantResults) {
+        if (requestCode == READ_EXTERNAL_STORAGE_REQUEST_CODE) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission Granted
+                selectImage();
+            } else {
+                // Permission Denied
+            }
+        }
+    }
+
 
     /**
      * 压缩单张图片 Listener 方式
